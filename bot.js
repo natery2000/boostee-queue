@@ -1,7 +1,7 @@
 require('dotenv').config();
 const Discord = require('discord.js');
 const bot = new Discord.Client();
-const config = require("./config.json");
+//const config = require("./config.json");
 const { ConsoleTransportOptions, Console } = require('winston/lib/winston/transports');
 
 const TOKEN = process.env.TOKEN;
@@ -54,7 +54,7 @@ function getMessage(boost, username) {
 
 bot.on('ready', () => {
     console.info(`Logged in as ${bot.user.tag}!`);
-    bot.user.setActivity(config.ACTIVITY_STATUS, {
+    bot.user.setActivity("Direct Messages", {
         type: "WATCHING"
     });
 });
