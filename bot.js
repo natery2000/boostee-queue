@@ -1,7 +1,6 @@
 require('dotenv').config();
 const Discord = require('discord.js');
 const bot = new Discord.Client();
-//const config = require("./config.json");
 const { ConsoleTransportOptions, Console } = require('winston/lib/winston/transports');
 
 const TOKEN = process.env.TOKEN;
@@ -16,15 +15,16 @@ const boost_create_state = {
     PRICED: 'priced',
     TIMED: 'timed',
     DURATIONED: 'durationed',
-    DESCRIPTIONED: 'descriptioned'
+    DESCRIPTIONED: 'descriptioned',
+    CHANNELLED: 'channelled'
 };
 
-function getGeneralChannel() {
-    return bot.channels.cache.get(bot.channels.cache.find(channel => channel.type === 'text' && channel.name === 'general').id);
+function getBoostChannel(boost) {
+    return bot.channels.cache.get(bot.channels.cache.find(channel => channel.type === 'text' && channel.name === boost.channel).id);
 }
 
-function getMessageFromReaction(boostMessageId) {
-    return getGeneralChannel().messages.cache.find(message => message.id === boostMessageId);
+function getMessageFromReaction(boostMessageId, boost) {
+    return getBoostChannel(boost).messages.cache.find(message => message.id === boostMessageId);
 }
 
 function getQueue(queue) {
@@ -79,7 +79,7 @@ bot.on('message', async message => {
         message.delete();
         var boostid = message.content.trim().length > boost_start.length ? message.content.substring(boost_start.length - 1).trim() : undefined;
         if (boostid === undefined || boosters[user].boosts[boostid] === undefined) { message.author.send('You tried to end a boost, and the id provided was invalid'); return; }
-        getMessageFromReaction(boosters[user].boosts[boostid].messageid).delete();
+        getMessageFromReaction(boosters[user].boosts[boostid].messageid, boosters[user].boosts[boostid]).delete();
         boosters[user].boosts[boostid] = undefined;
     } else if (!message.author.bot && message.channel.type === 'dm') {
         var currentBoost = boosters[user].boosts[boosters[user].currentid];
@@ -107,9 +107,14 @@ bot.on('message', async message => {
             case boost_create_state.DURATIONED:
                 currentBoost.description = message.content;
                 currentBoost.state = boost_create_state.DESCRIPTIONED
+                message.author.send('What channel do you want this posted in?');
+                break;
+            case boost_create_state.DESCRIPTIONED:
+                currentBoost.channel = message.content;
+                currentBoost.state = boost_create_state.CHANNELLED;
 
                 await message.author.send('Creating boost...')
-                var boost_post = await getGeneralChannel().send(getMessage(currentBoost, boosters[user].name));  
+                var boost_post = await getBoostChannel(currentBoost).send(getMessage(currentBoost, boosters[user].name));  
                 await boost_post.react('😄')
                 currentBoost.messageid = boost_post.id;
                 await message.author.send('Boost created.');
@@ -124,7 +129,7 @@ bot.on('messageReactionAdd', (reaction, user) => {
     var boost = booster.boosts[Object.keys(booster.boosts).find((keykey, _) => booster.boosts[keykey].messageid === reaction.message.id)];
     if (boost.queue === undefined) { boost.queue = new Set(); }
     boost.queue.add(user.username);
-    getMessageFromReaction(reaction.message.id).edit(getMessage(boost, booster.name));
+    getMessageFromReaction(reaction.message.id, boost).edit(getMessage(boost, booster.name));
 });
 
 bot.on('messageReactionRemove', (reaction, user) => {
@@ -133,5 +138,5 @@ bot.on('messageReactionRemove', (reaction, user) => {
     var boost = booster.boosts[Object.keys(booster.boosts).find((keykey, _) => booster.boosts[keykey].messageid === reaction.message.id)];
     if (boost.queue === undefined) { boost.queue = new Set(); }
     boost.queue.delete(user.username);
-    getMessageFromReaction(reaction.message.id).edit(getMessage(boost, booster.name));
+    getMessageFromReaction(reaction.message.id, boost).edit(getMessage(boost, booster.name));
 });
