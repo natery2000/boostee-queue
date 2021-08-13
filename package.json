@@ -6,8 +6,8 @@
     "author": "Nathan Werry",
     "dependencies": {
         "discord.io": "https://github.com/woor/discord.io/tarball/gateway_v6",
-        "discord.js": "^12.2.0",
-        "dotenv": "^8.2.0",
+        "discord.js": "^13.1.0",
+        "dotenv": "^10.0.0",
         "winston": "^3.3.3"
     }
 }
